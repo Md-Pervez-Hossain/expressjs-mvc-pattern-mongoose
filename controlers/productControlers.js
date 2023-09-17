@@ -1,11 +1,16 @@
 const connectMongoDB = require("../db/connectMongoDB");
 const Product = require("../models/productSchema");
+const {
+  getAllProducts,
+  addProducts,
+  updateProductsService,
+  BulkUpdateProductsService,
+} = require("../services/product.services");
 
 module.exports.getAllProduct = async (req, res) => {
   try {
     await connectMongoDB();
-    const products = await Product.find({});
-
+    const products = await getAllProducts();
     if (products?.length > 0) {
       res.status(200).json({
         status: "success",
@@ -25,18 +30,47 @@ module.exports.getAllProduct = async (req, res) => {
     });
   }
 };
-module.exports.getSingleProduct = (req, res) => {
-  res.send("get Single Product ");
+module.exports.bulkUpdateProduct = async (req, res) => {
+  try {
+    const result = await BulkUpdateProductsService(req.body);
+    if (result) {
+      res.status(200).json({
+        status: "success",
+        message: "Product Updated",
+        data: result,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      status: "fail",
+      message: "Couldn't update",
+      error: error.message,
+    });
+  }
+};
+module.exports.updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await updateProductsService(id, req.body);
+    if (result) {
+      res.status(200).json({
+        status: "success",
+        message: "Product Updated",
+        data: result,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      status: "fail",
+      message: "Couldn't update",
+      error: error.message,
+    });
+  }
 };
 module.exports.saveAProduct = async (req, res) => {
   try {
-    console.log(req.body);
-    const product = new Product(req.body);
     await connectMongoDB();
-    if (product.quantity === 0) {
-      product.status = "out-of-stock";
-    }
-    const addedProduct = await product.save(product);
+    const addedProduct = await addProducts(req.body);
     if (addedProduct) {
       res.status(200).json({
         status: "success",
