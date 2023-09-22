@@ -1,9 +1,16 @@
 const connectMongoDB = require("../db/connectMongoDB");
 const Product = require("../models/productSchema");
 
-module.exports.getAllProducts = async () => {
-  const product = await Product.find({});
-  return product;
+module.exports.getAllProducts = async (filters, queries) => {
+  console.log(filters);
+  const product = await Product.find(filters)
+    .skip(queries.skip)
+    .limit(queries.limit)
+    .sort(queries.sortBy)
+    .limit(queries.limitBy);
+  const totalProducts = await Product.countDocuments(filters);
+  const pageCount = Math.ceil(totalProducts / queries.limit);
+  return { product, totalProducts, pageCount };
 };
 module.exports.addProducts = async (data) => {
   const allproduct = new Product(data);
@@ -41,19 +48,22 @@ module.exports.updateProductsService = async (productId, data) => {
   }
 };
 
-module.exports.BulkUpdateProductsService = async (data) => {
+module.exports.DeleteProductsService = async (id) => {
   try {
     await connectMongoDB();
-    // const result = await Product.updateMany({ _id: data.ids }, data.data, {
-    //   runValidators: true,
-    // });
+    const result = await Product.deleteOne({ _id: id });
+    return result;
+  } catch (error) {
+    console.error("Error saving product:", error);
+    throw error; // Rethrow the error to handle it elsewhere if needed
+  }
+};
 
-    const products = [];
-    data.ids.forEach((product) => {
-      products.push(Product.updateOne({ _id: product.id }, product.data));
-    });
-
-    const result = await Promise.all(products);
+module.exports.BulkDeleteProductsService = async (ids) => {
+  try {
+    await connectMongoDB();
+    const result = await Product.deleteMany({ _id: ids });
+    console.log(result);
     return result;
   } catch (error) {
     console.error("Error saving product:", error);
